@@ -5,9 +5,10 @@ class Figure:
     sides_count = 0
 
     def __init__(self, *args, **kwargs):
-        self.__sides = []
+        self.__sides = None
         self.filled = None
         self.__color = None
+        sides = []
         for arg in args:
             if isinstance(arg, bool):
                 self.filled = arg
@@ -17,15 +18,16 @@ class Figure:
                     self.__color = list(arg) if self.__is_valid_color(arg) else None
                 continue
             if isinstance(arg, int):
-                self.__sides.append(arg)
+                sides.append(arg)
         if self.__color is None:
-            kwargs.get('color', [0, 0, 0])
+            self.__color = kwargs.get('color', [0, 0, 0])
         if self.filled is None:
-            kwargs.get('filled', False)
-        if len(self.__sides) != self.sides_count and len(self.__sides) != 1:
-            self.__sides = [1] * self.sides_count
-        elif len(self.__sides) == 1:
-            self.__sides = self.__sides * self.sides_count
+            self.filled = kwargs.get('filled', False)
+        if len(sides) != self.sides_count and len(sides) != 1:
+            sides = [1] * self.sides_count
+        elif len(sides) == 1:
+            sides = sides * self.sides_count
+        self.set_sides(*sides)
 
     @staticmethod
     def __is_valid_color(*colors):
@@ -72,27 +74,33 @@ class Circle(Figure):
         return pi * self.__radius ** 2
 
 
-class Triangle(Figure):
+class Triangle(Figure) :
 
     def __init__(self, *args, **kwargs):
         self.sides_count = 3
         super().__init__(*args, **kwargs)
-        self.__sides = self.get_sides()
-        if not self.__is_valid_sides(self.__sides):
-            print(f'Нельзя создать треугольник со сторонами {self.get_sides()}')
+        if super().get_sides() is None:
             del self
+
 
     def get_square(self):
         sides = self.get_sides()
         a, b, c = sides
         return pow((p := (sum(sides) / 2)) * (p - a) * (p - b) * (p - c), 1 / 2)
 
+    def set_sides(self, *args):
+        if self.__is_valid_sides(args):
+            super().set_sides(*args)
+            self.__sides = list(args)
+        else:
+            print(f'Нельзя построить треугольник со сторонами {args}')
+
     def __is_valid_sides(self, *args):
         if len(args) == 1:
             args = args[0]
-        condition1 = super().__is_valid_sides(args)
+        condition1 = [isinstance(arg, int) and arg > 0 for arg in args]
         condition = [args[0] < (args[1] + args[2]), args[1] < (args[0] + args[2]), args[2] < (args[0] + args[1])]
-        return condition and condition1
+        return all(condition) and all(condition1)
 
     def __repr__(self):
         return f'Треугольник со сторонами {self.get_sides()}'
@@ -134,4 +142,7 @@ if __name__ == "__main__":
     t1 = Triangle((0, 255, 0), 3, 4, 5, True)
     print(f'Площадь {t1} = {t1.get_square()}')
     print(f'Периметр {t1} = {len(t1)}')
-    t2 = Triangle(12, 3, 4)  # Не должен создаться
+    t2 = Triangle(12, 3, 4) # Не создастся
+    t2 = Triangle(2, 3, 4)
+    t2.set_sides(12,3,4)
+    print(t2) # Не должны поменяться
